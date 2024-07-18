@@ -173,8 +173,9 @@ if args.disable_auto_launch:
     args.auto_launch = False
 
 import logging
-logging_level = logging.INFO
+# logging_level = logging.INFO
+logging_level = logging.DEBUG
 if args.verbose:
     logging_level = logging.DEBUG
 
-logging.basicConfig(format="%(message)s", level=logging_level)
+logging.basicConfig(format="%(asctime)s - %(levelname)s - %(filename)s: %(lineno)d - %(message)s", level=logging_level)
