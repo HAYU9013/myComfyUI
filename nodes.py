@@ -434,7 +434,7 @@ class SaveLatent:
                     metadata[x] = json.dumps(extra_pnginfo[x])
 
         file = f"{filename}_{counter:05}_.latent"
-
+        
         results = list()
         results.append({
             "filename": file,
@@ -449,6 +449,16 @@ class SaveLatent:
         output["latent_format_version_0"] = torch.tensor([])
         logging.info("\n\n======\n\n" + str(samples["samples"].shape) + "\n\n======\n\n")
         # logging.info("======\n\n" + str(samples["samples"].tolist()) + "======\n\n")
+
+        ##### save as txt #####
+        # name the file as the last word of the input filename_prefix
+        txtprefix = filename_prefix.split('/')[-1]
+        txtFilename = "./output/latents/lab/test1/" + txtprefix + ".txt"
+        logging.info("\n\n======\n\nsave latent txtfilename: " + txtFilename + "\n\n======\n\n")
+        with open(txtFilename, 'a') as f:
+            f.write(str(samples["samples"].tolist()) + "\n")
+        #######################
+
         comfy.utils.save_torch_file(output, file, metadata=metadata)
         return { "ui": { "latents": results } }
 
