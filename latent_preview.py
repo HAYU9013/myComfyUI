@@ -38,8 +38,15 @@ class TAESDPreviewerImpl(LatentPreviewer):
 class Latent2RGBPreviewer(LatentPreviewer):
     def __init__(self, latent_rgb_factors):
         self.latent_rgb_factors = torch.tensor(latent_rgb_factors, device="cpu")
+        self.previewTime = 0
+    def save_latent_to_file(self, x0, filename="./output/latents/lab/test1/middle_latent_for_lab.txt"):
+        with open(filename, 'a') as f:
+            f.write(str(x0.tolist()) + "\n")
 
     def decode_latent_to_preview(self, x0):
+        logging.info(f"\n========\n\nin latent2RGB previewer {self.previewTime}:  {x0.shape} \n\n========\n")
+        self.previewTime+=1
+        self.save_latent_to_file(x0)
         self.latent_rgb_factors = self.latent_rgb_factors.to(dtype=x0.dtype, device=x0.device)
         latent_image = x0[0].permute(1, 2, 0) @ self.latent_rgb_factors
         return preview_to_image(latent_image)
