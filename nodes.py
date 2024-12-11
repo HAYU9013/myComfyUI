@@ -475,6 +475,19 @@ class SaveLatent:
         output["latent_tensor"] = samples["samples"]
         output["latent_format_version_0"] = torch.tensor([])
 
+        logging.info("\n\n======\n\n" + str(samples["samples"].shape) + "\n\n======\n\n")
+        # logging.info("======\n\n" + str(samples["samples"].tolist()) + "======\n\n")
+        ##### save as txt #####
+        # name the file as the last word of the input filename_prefix
+        txtprefix = filename_prefix.split('/')[-1]
+        txtFilename = "./output/latents/lab/test1/" + txtprefix + ".txt"
+        folder_path = os.path.dirname(txtFilename)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        logging.info("\n\n======\n\nsave latent txtfilename: " + txtFilename + "\n\n======\n\n")
+        with open(txtFilename, 'a') as f:
+            f.write(str(samples["samples"].tolist()) + "\n")
+        #######################
         comfy.utils.save_torch_file(output, file, metadata=metadata)
         return { "ui": { "latents": results } }
 
