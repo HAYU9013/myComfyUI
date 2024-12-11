@@ -2,17 +2,16 @@
 #and modified
 
 import torch
-import torch as th
 import torch.nn as nn
 
 from ..ldm.modules.diffusionmodules.util import (
-    zero_module,
     timestep_embedding,
 )
 
 from ..ldm.modules.attention import SpatialTransformer
 from ..ldm.modules.diffusionmodules.openaimodel import UNetModel, TimestepEmbedSequential, ResBlock, Downsample
 from ..ldm.util import exists
+from .control_types import UNION_CONTROLNET_TYPES
 from collections import OrderedDict
 import comfy.ops
 from comfy.ldm.modules.attention import optimized_attention
@@ -389,6 +388,18 @@ class ControlNet(nn.Module):
         guided_hint = None
         if self.control_add_embedding is not None: #Union Controlnet
             control_type = kwargs.get("control_type", [])
+
+            if any([c >= self.num_control_type for c in control_type]):
+                max_type = max(control_type)
+                max_type_name = {
+                    v: k for k, v in UNION_CONTROLNET_TYPES.items()
+                }[max_type]
+                raise ValueError(
+                    f"Control type {max_type_name}({max_type}) is out of range for the number of control types" +
+                    f"({self.num_control_type}) supported.\n" +
+                    "Please consider using the ProMax ControlNet Union model.\n" +
+                    "https://huggingface.co/xinsir/controlnet-union-sdxl-1.0/tree/main"
+                )
 
             emb += self.control_add_embedding(control_type, emb.dtype, emb.device)
             if len(control_type) > 0:

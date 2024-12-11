@@ -1,7 +1,7 @@
-import folder_paths
 import comfy.sd
 import comfy.model_sampling
 import comfy.latent_formats
+import nodes
 import torch
 
 class LCM(comfy.model_sampling.EPS):
@@ -25,8 +25,8 @@ class X0(comfy.model_sampling.EPS):
 class ModelSamplingDiscreteDistilled(comfy.model_sampling.ModelSamplingDiscrete):
     original_timesteps = 50
 
-    def __init__(self, model_config=None):
-        super().__init__(model_config)
+    def __init__(self, model_config=None, zsnr=None):
+        super().__init__(model_config, zsnr=zsnr)
 
         self.skip_steps = self.num_timesteps // self.original_timesteps
 
@@ -49,25 +49,6 @@ class ModelSamplingDiscreteDistilled(comfy.model_sampling.ModelSamplingDiscrete)
         log_sigma = (1 - w) * self.log_sigmas[low_idx] + w * self.log_sigmas[high_idx]
         return log_sigma.exp().to(timestep.device)
 
-
-def rescale_zero_terminal_snr_sigmas(sigmas):
-    alphas_cumprod = 1 / ((sigmas * sigmas) + 1)
-    alphas_bar_sqrt = alphas_cumprod.sqrt()
-
-    # Store old values.
-    alphas_bar_sqrt_0 = alphas_bar_sqrt[0].clone()
-    alphas_bar_sqrt_T = alphas_bar_sqrt[-1].clone()
-
-    # Shift so the last timestep is zero.
-    alphas_bar_sqrt -= (alphas_bar_sqrt_T)
-
-    # Scale so the first timestep is back to the old value.
-    alphas_bar_sqrt *= alphas_bar_sqrt_0 / (alphas_bar_sqrt_0 - alphas_bar_sqrt_T)
-
-    # Convert alphas_bar_sqrt to betas
-    alphas_bar = alphas_bar_sqrt**2  # Revert sqrt
-    alphas_bar[-1] = 4.8973451890853435e-08
-    return ((1 - alphas_bar) / alphas_bar) ** 0.5
 
 class ModelSamplingDiscrete:
     @classmethod
@@ -99,9 +80,7 @@ class ModelSamplingDiscrete:
         class ModelSamplingAdvanced(sampling_base, sampling_type):
             pass
 
-        model_sampling = ModelSamplingAdvanced(model.model.model_config)
-        if zsnr:
-            model_sampling.set_sigmas(rescale_zero_terminal_snr_sigmas(model_sampling.sigmas))
+        model_sampling = ModelSamplingAdvanced(model.model.model_config, zsnr=zsnr)
 
         m.add_object_patch("model_sampling", model_sampling)
         return (m, )
@@ -169,6 +148,42 @@ class ModelSamplingAuraFlow(ModelSamplingSD3):
 
     def patch_aura(self, model, shift):
         return self.patch(model, shift, multiplier=1.0)
+
+class ModelSamplingFlux:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": { "model": ("MODEL",),
+                              "max_shift": ("FLOAT", {"default": 1.15, "min": 0.0, "max": 100.0, "step":0.01}),
+                              "base_shift": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 100.0, "step":0.01}),
+                              "width": ("INT", {"default": 1024, "min": 16, "max": nodes.MAX_RESOLUTION, "step": 8}),
+                              "height": ("INT", {"default": 1024, "min": 16, "max": nodes.MAX_RESOLUTION, "step": 8}),
+                              }}
+
+    RETURN_TYPES = ("MODEL",)
+    FUNCTION = "patch"
+
+    CATEGORY = "advanced/model"
+
+    def patch(self, model, max_shift, base_shift, width, height):
+        m = model.clone()
+
+        x1 = 256
+        x2 = 4096
+        mm = (max_shift - base_shift) / (x2 - x1)
+        b = base_shift - mm * x1
+        shift = (width * height / (8 * 8 * 2 * 2)) * mm + b
+
+        sampling_base = comfy.model_sampling.ModelSamplingFlux
+        sampling_type = comfy.model_sampling.CONST
+
+        class ModelSamplingAdvanced(sampling_base, sampling_type):
+            pass
+
+        model_sampling = ModelSamplingAdvanced(model.model.model_config)
+        model_sampling.set_parameters(shift=shift)
+        m.add_object_patch("model_sampling", model_sampling)
+        return (m, )
+
 
 class ModelSamplingContinuousEDM:
     @classmethod
@@ -284,5 +299,6 @@ NODE_CLASS_MAPPINGS = {
     "ModelSamplingStableCascade": ModelSamplingStableCascade,
     "ModelSamplingSD3": ModelSamplingSD3,
     "ModelSamplingAuraFlow": ModelSamplingAuraFlow,
+    "ModelSamplingFlux": ModelSamplingFlux,
     "RescaleCFG": RescaleCFG,
 }
