@@ -448,6 +448,9 @@ class SaveLatent:
         output["latent_tensor"] = samples["samples"]
         output["latent_format_version_0"] = torch.tensor([])
 
+        logging.info("\n\n======\n\n" + str(samples["samples"].shape) + "\n\n======\n\n")
+        # logging.info("======\n\n" + str(samples["samples"].tolist()) + "======\n\n")
+        
         comfy.utils.save_torch_file(output, file, metadata=metadata)
         return { "ui": { "latents": results } }
 
