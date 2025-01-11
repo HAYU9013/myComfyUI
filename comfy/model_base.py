@@ -93,7 +93,7 @@ def model_sampling(model_config, model_type):
 class BaseModel(torch.nn.Module):
     def __init__(self, model_config, model_type=ModelType.EPS, device=None, unet_model=UNetModel):
         super().__init__()
-
+        
         unet_config = model_config.unet_config
         self.latent_format = model_config.latent_format
         self.model_config = model_config
@@ -347,7 +347,8 @@ def sdxl_pooled(args, noise_augmentor):
         return unclip_adm(args.get("unclip_conditioning", None), args["device"], noise_augmentor, seed=args.get("seed", 0) - 10)[:,:1280]
     else:
         return args["pooled_output"]
-
+    
+## 這裡會定義各種模型的結構
 class SDXLRefiner(BaseModel):
     def __init__(self, model_config, model_type=ModelType.EPS, device=None):
         super().__init__(model_config, model_type, device=device)

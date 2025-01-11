@@ -1,6 +1,7 @@
 import torch
 from comfy.ldm.modules.diffusionmodules.util import make_beta_schedule
 import math
+import logging
 
 def rescale_zero_terminal_snr_sigmas(sigmas):
     alphas_cumprod = 1 / ((sigmas * sigmas) + 1)
@@ -35,7 +36,9 @@ class EPS:
             noise = noise * torch.sqrt(1.0 + sigma ** 2.0)
         else:
             noise = noise * sigma
-
+        ## 這一整塊只會跑一次
+        ## 在這裡將噪音與 latent 圖片混和
+        logging.info(f"noise shape: {noise.shape}")
         noise += latent_image
         return noise
 

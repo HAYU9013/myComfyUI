@@ -1,5 +1,9 @@
-from abc import abstractmethod
+### 最最最底層的 model 在這裡
 
+from abc import abstractmethod
+import os
+import shutil
+import numpy as np
 import torch as th
 import torch.nn as nn
 import torch.nn.functional as F
@@ -14,6 +18,8 @@ from .util import (
 )
 from ..attention import SpatialTransformer, SpatialVideoTransformer, default
 from comfy.ldm.util import exists
+import pickle
+import os
 import comfy.patcher_extension
 import comfy.ops
 ops = comfy.ops.disable_weight_init
@@ -445,7 +451,6 @@ class UNetModel(nn.Module):
         operations=ops,
     ):
         super().__init__()
-
         if context_dim is not None:
             assert use_spatial_transformer, 'Fool!! You forgot to use the spatial transformer for your cross-attention conditioning...'
             # from omegaconf.listconfig import ListConfig
@@ -887,6 +892,44 @@ class UNetModel(nn.Module):
         if self.middle_block is not None:
             h = forward_timestep_embed(self.middle_block, h, emb, context, transformer_options, time_context=time_context, num_video_frames=num_video_frames, image_only_indicator=image_only_indicator)
         h = apply_control(h, control, 'middle')
+
+
+        # 高機率取得 hspace 是在這裡
+        # hs[-1] 是最後一個 input block 的 output
+        # h 是 middle block 的 output
+        # 儲存 hspace
+        
+        h2 = h
+        hspace = h2.detach().cpu().numpy()
+        with open('./tttttttttttthspace.pkl', 'wb') as f:
+            pickle.dump(hspace, f)
+            # Check if the directory exists, if not, create it
+            output_dir = './output/lab/hspace'
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            # Clear the contents of the output directory
+            output_dir = './output/lab/hspace'
+            if os.path.exists(output_dir):
+                # for file in os.listdir(output_dir):
+                #     file_path = os.path.join(output_dir, file)
+                #     if os.path.isfile(file_path) or os.path.islink(file_path):
+                #         os.unlink(file_path)
+                #     elif os.path.isdir(file_path):
+                #         shutil.rmtree(file_path)
+                pass
+            else:
+                os.makedirs(output_dir)
+
+            # Find the next available ordinal number for the new file
+            existing_files = [int(name.split('.')[0]) for name in os.listdir(output_dir) if name.split('.')[0].isdigit()]
+            next_file_num = max(existing_files, default=0) + 1
+            pickle_file_path = os.path.join(output_dir, f'{next_file_num}.pkl')
+
+            # Save hspace to a pickle file with the ordinal number as the filename
+            with open(pickle_file_path, 'wb') as f:
+                pickle.dump(hspace, f)
+
 
 
         for id, module in enumerate(self.output_blocks):

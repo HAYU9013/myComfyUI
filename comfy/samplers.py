@@ -18,6 +18,7 @@ import comfy.patcher_extension
 import comfy.hooks
 import scipy.stats
 import numpy
+import logging
 
 def get_area_and_mult(conds, x_in, timestep_in):
     dims = tuple(x_in.shape[2:])
@@ -361,6 +362,7 @@ def sampling_function(model, x, timestep, uncond, cond, cond_scale, model_option
         uncond_ = uncond
 
     conds = [cond, uncond_]
+    ## 看到這邊
     out = calc_cond_batch(model, conds, x, timestep, model_options)
 
     for fn in model_options.get("sampler_pre_cfg_function", []):
@@ -703,7 +705,7 @@ class KSAMPLER(Sampler):
             model_k.noise = torch.randn(noise.shape, generator=generator, device="cpu").to(noise.dtype).to(noise.device)
         else:
             model_k.noise = noise
-
+        ## 在 preview 之前會走到這裡，這邊已經取完 noise 了，準備要進行 noise + latent
         noise = model_wrap.inner_model.model_sampling.noise_scaling(sigmas[0], noise, latent_image, self.max_denoise(model_wrap, sigmas))
 
         k_callback = None
@@ -837,7 +839,7 @@ class CFGGuider:
 
     def __call__(self, *args, **kwargs):
         return self.predict_noise(*args, **kwargs)
-
+    ## 預測噪音可能是在這裡，然後跳到上面 375 行 sample_function()
     def predict_noise(self, x, timestep, model_options={}, seed=None):
         return sampling_function(self.inner_model, x, timestep, self.conds.get("negative", None), self.conds.get("positive", None), self.cfg, model_options=model_options, seed=seed)
 

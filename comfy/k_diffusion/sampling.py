@@ -141,7 +141,10 @@ def sample_euler(model, x, sigmas, extra_args=None, callback=None, disable=None,
     """Implements Algorithm 2 (Euler steps) from Karras et al. (2022)."""
     extra_args = {} if extra_args is None else extra_args
     s_in = x.new_ones([x.shape[0]])
+    
+
     for i in trange(len(sigmas) - 1, disable=disable):
+        ## 看到這裡，好像每次都會進來這個函數，所以這個函數是用來做什麼的呢？
         if s_churn > 0:
             gamma = min(s_churn / (len(sigmas) - 1), 2 ** 0.5 - 1) if s_tmin <= sigmas[i] <= s_tmax else 0.
             sigma_hat = sigmas[i] * (gamma + 1)
