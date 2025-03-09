@@ -848,6 +848,7 @@ class UNetModel(nn.Module):
         :param y: an [N] Tensor of labels, if class-conditional.
         :return: an [N x C x ...] Tensor of outputs.
         """
+        # breakpoint()
         transformer_options["original_shape"] = list(x.shape)
         transformer_options["transformer_index"] = 0
         transformer_patches = transformer_options.get("patches", {})
@@ -901,35 +902,34 @@ class UNetModel(nn.Module):
         
         h2 = h
         hspace = h2.detach().cpu().numpy()
-        with open('./tttttttttttthspace.pkl', 'wb') as f:
+
+        # Check if the directory exists, if not, create it
+        output_dir = './output/lab/hspace'
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        # Clear the contents of the output directory
+        output_dir = './output/lab/hspace'
+        if os.path.exists(output_dir):
+            # for file in os.listdir(output_dir):
+            #     file_path = os.path.join(output_dir, file)
+            #     if os.path.isfile(file_path) or os.path.islink(file_path):
+            #         os.unlink(file_path)
+            #     elif os.path.isdir(file_path):
+            #         shutil.rmtree(file_path)
+            pass
+        else:
+            os.makedirs(output_dir)
+
+        # Find the next available ordinal number for the new file
+        existing_files = [int(name.split('.')[0]) for name in os.listdir(output_dir) if name.split('.')[0].isdigit()]
+        next_file_num = max(existing_files, default=0) + 1
+        pickle_file_path = os.path.join(output_dir, f'{next_file_num}.pkl')
+
+        # Save hspace to a pickle file with the ordinal number as the filename
+        with open(pickle_file_path, 'wb') as f:
             pickle.dump(hspace, f)
-            # Check if the directory exists, if not, create it
-            output_dir = './output/lab/hspace'
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
-
-            # Clear the contents of the output directory
-            output_dir = './output/lab/hspace'
-            if os.path.exists(output_dir):
-                # for file in os.listdir(output_dir):
-                #     file_path = os.path.join(output_dir, file)
-                #     if os.path.isfile(file_path) or os.path.islink(file_path):
-                #         os.unlink(file_path)
-                #     elif os.path.isdir(file_path):
-                #         shutil.rmtree(file_path)
-                pass
-            else:
-                os.makedirs(output_dir)
-
-            # Find the next available ordinal number for the new file
-            existing_files = [int(name.split('.')[0]) for name in os.listdir(output_dir) if name.split('.')[0].isdigit()]
-            next_file_num = max(existing_files, default=0) + 1
-            pickle_file_path = os.path.join(output_dir, f'{next_file_num}.pkl')
-
-            # Save hspace to a pickle file with the ordinal number as the filename
-            with open(pickle_file_path, 'wb') as f:
-                pickle.dump(hspace, f)
-
+        # breakpoint()
 
 
         for id, module in enumerate(self.output_blocks):
