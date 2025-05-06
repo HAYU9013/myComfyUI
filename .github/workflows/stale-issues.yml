@@ -1,8 +1,8 @@
 name: 'Close stale issues'
-on:
-  schedule:
-    # Run daily at 430 am PT
-    - cron: '30 11 * * *'
+# on:
+#   # schedule:
+#     # Run daily at 430 am PT
+#     # - cron: '30 11 * * *'
 permissions:
   issues: write
 
